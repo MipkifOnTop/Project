@@ -3,217 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NightShop - Электроника</title>
+    <title>NightShop - No Script Version</title>
     
-
+    <!-- Шрифт для лого -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Island+Moments&display=swap" rel="stylesheet">
-    
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- БАЗОВЫЕ СТИЛИ --- */
+        :root {
+            --bg: #333;
+            --text: #fff;
+            --card-bg: #d9d9d9;
+            --card-text: #333;
+            --accent: #27ae60;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 50px; }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- HEADER --- */
+        header {
+            padding: 10px 30px;
+            background: #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .logo { font-family: 'Island Moments', cursive; font-size: 3.5rem; line-height: 1; color: #fff; }
+        
+        .contact-btn {
+            background: #555;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .contact-btn:hover { background: #777; }
+
+        /* --- CSS МАГИЯ: ФИЛЬТРЫ (Radio Hack) --- */
+        /* Скрываем сами радио-кнопки, но используем их состояние */
+        input[type="radio"] { display: none; }
+
+        /* Стили кнопок фильтров (это labels) */
+        .filters { display: flex; justify-content: center; gap: 10px; margin: 30px 0; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 8px 20px;
+            border: 1px solid #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            user-select: none;
+        }
+        .filter-btn:hover { background: #555; }
+
+        /* Подсветка активной кнопки:
+           Если радио #radio-X выбрано, то найти внутри .content label с таким же for */
+        #radio-all:checked ~ .content .filters label[for="radio-all"],
+        #radio-phones:checked ~ .content .filters label[for="radio-phones"],
+        #radio-laptops:checked ~ .content .filters label[for="radio-laptops"],
+        #radio-audio:checked ~ .content .filters label[for="radio-audio"] {
+            background: #fff;
+            color: #333;
+            border-color: #fff;
+        }
+
+        /* ЛОГИКА ФИЛЬТРАЦИИ:
+           Если выбраны "Телефоны", найти карточки, у которых НЕТ класса .cat-phone, и скрыть их */
+        #radio-phones:checked ~ .content .products-grid .product-card:not(.cat-phone) { display: none; }
+        #radio-laptops:checked ~ .content .products-grid .product-card:not(.cat-laptop) { display: none; }
+        #radio-audio:checked ~ .content .products-grid .product-card:not(.cat-audio) { display: none; }
+
+        /* --- СЕТКА ТОВАРОВ --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+        }
+        
+        .product-card {
+            background: var(--card-bg);
+            color: var(--card-text);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.5s; /* Плавное появление при фильтрации */
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .product-img {
+            height: 160px;
+            background: #fff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .product-info h3 { font-size: 1.1rem; margin-bottom: 5px; }
+        .price { font-weight: bold; font-size: 1.3rem; margin: 10px 0; }
+        
+        /* Кнопки внутри карточки */
+        .btn-group { margin-top: auto; display: flex; gap: 10px; }
+        
+        .btn-details {
+            flex: 1;
+            padding: 10px;
+            background: #666;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-buy {
+            flex: 1;
+            padding: 10px;
+            background: var(--accent);
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .btn-buy:hover { background: #219150; }
+
+        /* --- МОДАЛЬНЫЕ ОКНА (CSS Target Hack) --- */
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Когда ID модалки появляется в URL (например #modal-1), мы меняем display */
+        .modal:target { display: flex; }
+
+        .modal-content {
+            background: #fff;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .close-area {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            cursor: default;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            text-decoration: none;
+            line-height: 1;
+        }
+        .close-btn:hover { color: #333; }
+
+        .modal-img { font-size: 5rem; margin-bottom: 15px; display: block; }
+        .modal-desc { color: #555; line-height: 1.6; margin-bottom: 20px; }
+
+    </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">NightShop</div>
-        <nav>
-            <button onclick="scrollToCatalog()">Каталог</button>
-            <button>Трейд-ин</button>
-            <button>Гарантия</button>
-            <button class="cart-btn" onclick="openCart()">
-                Корзина <span class="cart-count" id="cartCount">0</span>
-            </button>
-        </nav>
-    </header>
+    <!-- 1. ГЛОБАЛЬНЫЕ ПЕРЕКЛЮЧАТЕЛИ (Radio Buttons) -->
+    <!-- Контролируют состояние фильтров для всего сайта -->
+    <input type="radio" name="cat" id="radio-all" checked>
+    <input type="radio" name="cat" id="radio-phones">
+    <input type="radio" name="cat" id="radio-laptops">
+    <input type="radio" name="cat" id="radio-audio">
 
-    <section class="hero">
-        <div>
-            <h1>NIGHTSHOP ELECTRONICS</h1>
-            <p>Технологии будущего уже здесь.</p>
-        </div>
-    </section>
-
-
-    <main class="container" id="catalog">
-        <h2 class="section-title">Каталог товаров</h2>
+    <!-- Обертка .content нужна для работы селектора ~ -->
+    <div class="content">
         
+        <!-- HEADER -->
+        <header>
+            <div class="logo">NightShop</div>
+            <!-- Так как JS нет, корзина не может считать товары. Меняем на кнопку связи. -->
+            <a href="mailto:info@nightshop.ru" class="contact-btn">Написать нам</a>
+        </header>
 
-        <div class="filters">
-            <button class="filter-btn active" onclick="filterProducts('all')">Все</button>
-            <button class="filter-btn" onclick="filterProducts('phones')">Смартфоны</button>
-            <button class="filter-btn" onclick="filterProducts('laptops')">Ноутбуки</button>
-            <button class="filter-btn" onclick="filterProducts('audio')">Аудио</button>
-            <button class="filter-btn" onclick="filterProducts('accessories')">Гаджеты</button>
-        </div>
-
-
-        <div class="products-grid" id="productsGrid">
-
-        </div>
-    </main>
-
-
-    <div id="cartModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('cartModal')">&times;</span>
-            <h2>Ваша корзина</h2>
-            <ul class="cart-items" id="cartList">
-                <li>Корзина пуста</li>
-            </ul>
-            <div class="cart-total">Итого: <span id="cartTotal">0</span> ₽</div>
-            <button class="checkout-btn" onclick="checkout()">Оформить заказ</button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
-    <div id="productModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('productModal')">&times;</span>
-            <div style="text-align: center; font-size: 5rem; margin-bottom: 10px;" id="modalImg"></div>
-            <h2 id="modalTitle">Название</h2>
-            <p id="modalDesc" style="margin: 15px 0; color: #555; line-height: 1.5;">Описание...</p>
-            <p style="font-weight: bold; font-size: 1.5em; color: #333;">Цена: <span id="modalPrice">0</span> ₽</p>
-            <button class="add-btn" id="modalAddBtn" style="margin-top: 15px;">Добавить в корзину</button>
-        </div>
-    </div>
-
-    <script>
-        /* --- БАЗА ДАННЫХ И ЛОГИКА (JS) --- */
-
-        const products = [
-            { id: 1, name: "iPhone 15 Pro", category: "phones", price: 125000, image: "📱", desc: "Титановый корпус, чип A17 Pro и лучшая система камер. Идеален для фото и игр." },
-            { id: 2, name: "Samsung Galaxy S24", category: "phones", price: 110000, image: "📲", desc: "Искусственный интеллект Galaxy AI, невероятный экран AMOLED 120Гц." },
-            { id: 3, name: "MacBook Air 15\"", category: "laptops", price: 160000, image: "💻", desc: "Тонкий, легкий, на чипе M3. Работает до 18 часов без подзарядки." },
-            { id: 4, name: "Игровой Ноутбук ROG", category: "laptops", price: 195000, image: "🖥️", desc: "Мощная видеокарта RTX 4070, 32GB RAM. Для самых требовательных игр." },
-            { id: 5, name: "AirPods Max", category: "audio", price: 65000, image: "🎧", desc: "Полноразмерные наушники с активным шумоподавлением и пространственным аудио." },
-            { id: 6, name: "JBL Pulse 5", category: "audio", price: 25000, image: "🔈", desc: "Портативная колонка с потрясающей LED-подсветкой и глубокими басами." },
-            { id: 7, name: "Apple Watch Ultra 2", category: "accessories", price: 90000, image: "⌚", desc: "Самые прочные часы Apple. Для дайвинга, альпинизма и экстрима." },
-            { id: 8, name: "PlayStation 5 Slim", category: "accessories", price: 55000, image: "🎮", desc: "Игровая консоль нового поколения. 4K гейминг, SSD и тактильная отдача." },
-            { id: 9, name: "PlayStation 5", category: "accessories", price: 40000, image: "🎮", desc: "Игровая консоль нового поколения. 4K гейминг, SSD и тактильная отдача." },
-            { id: 10, name: "Mi 15T Pro", category: "phones", price: 50000, image: "📱", desc: "Флагманский телефон с 144 Гц экраном, Dimensity 9400+ под капотом и большая батарея." }
-        ];
-
-        let cart = [];
-        const productsGrid = document.getElementById('productsGrid');
-
-        function renderProducts(filter = 'all') {
-            productsGrid.innerHTML = ''; 
+        <main class="container">
             
-            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+            <!-- 2. КНОПКИ ФИЛЬТРОВ -->
+            <div class="filters">
+                <label for="radio-all" class="filter-btn">Все товары</label>
+                <label for="radio-phones" class="filter-btn">Смартфоны</label>
+                <label for="radio-laptops" class="filter-btn">Ноутбуки</label>
+                <label for="radio-audio" class="filter-btn">Аудио</label>
+            </div>
 
-            filtered.forEach(product => {
-                const formattedPrice = product.price.toLocaleString();
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                card.innerHTML = `
-                    <div class="product-img" onclick="showProductDetails(${product.id})">${product.image}</div>
+            <h2 style="text-align: center; margin-bottom: 20px; font-weight: 300; letter-spacing: 1px;">КАТАЛОГ</h2>
+
+            <!-- 3. СЕТКА ТОВАРОВ -->
+            <div class="products-grid">
+                
+                <!-- Товар 1 -->
+                <div class="product-card cat-phone">
+                    <div class="product-img">📱</div>
                     <div class="product-info">
-                        <h3>${product.name}</h3>
-                        <div class="product-desc-short">${product.desc.substring(0, 50)}...</div>
-                        <div class="product-price">${formattedPrice} ₽</div>
-                        <button class="add-btn" onclick="addToCart(${product.id})">В корзину</button>
+                        <h3>iPhone 15 Pro</h3>
+                        <div class="price">125 000 ₽</div>
                     </div>
-                `;
-                productsGrid.appendChild(card);
-            });
-        }
+                    <div class="btn-group">
+                        <a href="#modal-1" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ iPhone 15 Pro" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-        function filterProducts(category) {
-            renderProducts(category);
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(b => {
-                b.classList.remove('active');
-                if(b.textContent.toLowerCase().includes(getCategoryNameRU(category).toLowerCase()) || (category === 'all' && b.textContent === 'Все')) {
-                     b.classList.add('active');
-                }
-            });
-            if(event) event.target.classList.add('active');
-        }
-        
-        function getCategoryNameRU(cat) {
-            const map = { 'phones': 'Смартфоны', 'laptops': 'Ноутбуки', 'audio': 'Аудио', 'accessories': 'Гаджеты' };
-            return map[cat] || '';
-        }
+                <!-- Товар 2 -->
+                <div class="product-card cat-phone">
+                    <div class="product-img">📲</div>
+                    <div class="product-info">
+                        <h3>Samsung Galaxy S24</h3>
+                        <div class="price">110 000 ₽</div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="#modal-2" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ Samsung S24" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-        function addToCart(id) {
-            const product = products.find(p => p.id === id);
-            const existingItem = cart.find(item => item.id === id);
-            if (existingItem) { existingItem.qty++; } else { cart.push({ ...product, qty: 1 }); }
-            updateCartUI();
-        }
+                <!-- Товар 3 -->
+                <div class="product-card cat-laptop">
+                    <div class="product-img">💻</div>
+                    <div class="product-info">
+                        <h3>MacBook Air 15"</h3>
+                        <div class="price">160 000 ₽</div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="#modal-3" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ MacBook Air" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-        function removeFromCart(id) {
-            cart = cart.filter(item => item.id !== id);
-            updateCartUI();
-        }
+                <!-- Товар 4 -->
+                <div class="product-card cat-laptop">
+                    <div class="product-img">🖥️</div>
+                    <div class="product-info">
+                        <h3>Asus ROG Strix</h3>
+                        <div class="price">195 000 ₽</div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="#modal-4" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ Asus ROG" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-        function updateCartUI() {
-            const cartCount = document.getElementById('cartCount');
-            const cartList = document.getElementById('cartList');
-            const cartTotal = document.getElementById('cartTotal');
+                <!-- Товар 5 -->
+                <div class="product-card cat-audio">
+                    <div class="product-img">🎧</div>
+                    <div class="product-info">
+                        <h3>AirPods Max</h3>
+                        <div class="price">65 000 ₽</div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="#modal-5" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ AirPods Max" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-            cartCount.textContent = totalQty;
+                <!-- Товар 6 -->
+                <div class="product-card cat-audio">
+                    <div class="product-img">🔈</div>
+                    <div class="product-info">
+                        <h3>JBL Pulse 5</h3>
+                        <div class="price">25 000 ₽</div>
+                    </div>
+                    <div class="btn-group">
+                        <a href="#modal-6" class="btn-details">Инфо</a>
+                        <a href="mailto:order@night.ru?subject=Заказ JBL Pulse" class="btn-buy">Купить</a>
+                    </div>
+                </div>
 
-            cartList.innerHTML = '';
-            let totalPrice = 0;
+            </div>
+        </main>
+    </div>
 
-            if (cart.length === 0) {
-                cartList.innerHTML = '<li style="text-align:center; color:#777;">В корзине пока пусто</li>';
-            } else {
-                cart.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = 'cart-item';
-                    li.innerHTML = `
-                        <div>
-                            <strong>${item.name}</strong> <br>
-                            <span style="font-size:0.9em; color:#666;">${item.qty} шт. x ${item.price.toLocaleString()} ₽</span>
-                        </div>
-                        <div style="display:flex; align-items:center;">
-                            <span>${(item.price * item.qty).toLocaleString()} ₽</span>
-                            <span class="remove-btn" onclick="removeFromCart(${item.id})">&times;</span>
-                        </div>
-                    `;
-                    cartList.appendChild(li);
-                    totalPrice += item.price * item.qty;
-                });
-            }
-            cartTotal.textContent = totalPrice.toLocaleString();
-        }
+    <!-- 4. МОДАЛЬНЫЕ ОКНА (Вне основного контента) -->
+    <!-- Открываются, когда ID элемента попадает в URL (css :target) -->
 
-        function openCart() { document.getElementById('cartModal').style.display = 'flex'; }
+    <!-- Модалка 1 -->
+    <div id="modal-1" class="modal">
+        <a href="#" class="close-area"></a> <!-- Клик по фону закрывает -->
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">📱</span>
+            <h2>iPhone 15 Pro</h2>
+            <p class="modal-desc">Титановый корпус, мощнейший чип A17 Pro и профессиональная система камер для ночной съемки.</p>
+            <div class="price">125 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ iPhone 15 Pro" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
 
-        function showProductDetails(id) {
-            const product = products.find(p => p.id === id);
-            document.getElementById('modalImg').textContent = product.image;
-            document.getElementById('modalTitle').textContent = product.name;
-            document.getElementById('modalDesc').textContent = product.desc;
-            document.getElementById('modalPrice').textContent = product.price.toLocaleString();
-            
-            const btn = document.getElementById('modalAddBtn');
-            btn.onclick = function() { 
-                addToCart(product.id); 
-                closeModal('productModal'); 
-            };
-            document.getElementById('productModal').style.display = 'flex';
-        }
+    <!-- Модалка 2 -->
+    <div id="modal-2" class="modal">
+        <a href="#" class="close-area"></a>
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">📲</span>
+            <h2>Samsung Galaxy S24</h2>
+            <p class="modal-desc">Искусственный интеллект Galaxy AI, невероятный экран Dynamic AMOLED 2X 120 Гц.</p>
+            <div class="price">110 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ Samsung S24" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
 
-        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
-        
-        function checkout() {
-            if(cart.length === 0) { alert("Сначала добавьте товары в корзину!"); return; }
-            alert('Заказ успешно оформлен! Менеджер свяжется с вами.');
-            cart = []; updateCartUI(); closeModal('cartModal');
-        }
+    <!-- Модалка 3 -->
+    <div id="modal-3" class="modal">
+        <a href="#" class="close-area"></a>
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">💻</span>
+            <h2>MacBook Air 15"</h2>
+            <p class="modal-desc">Самый популярный ноутбук теперь с большим экраном. Чип M3, до 18 часов работы без подзарядки.</p>
+            <div class="price">160 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ MacBook Air" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
 
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
-        }
+    <!-- Модалка 4 -->
+    <div id="modal-4" class="modal">
+        <a href="#" class="close-area"></a>
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">🖥️</span>
+            <h2>Asus ROG Strix</h2>
+            <p class="modal-desc">Игровая мощь. Видеокарта RTX 4070, топовая система охлаждения и агрессивный дизайн.</p>
+            <div class="price">195 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ Asus ROG" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
 
-        function scrollToCatalog() { document.getElementById('catalog').scrollIntoView({behavior: "smooth"}); }
+    <!-- Модалка 5 -->
+    <div id="modal-5" class="modal">
+        <a href="#" class="close-area"></a>
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">🎧</span>
+            <h2>AirPods Max</h2>
+            <p class="modal-desc">Идеальный баланс захватывающего звука высокой четкости и волшебной простоты AirPods.</p>
+            <div class="price">65 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ AirPods Max" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
 
-        renderProducts();
-    </script>
+    <!-- Модалка 6 -->
+    <div id="modal-6" class="modal">
+        <a href="#" class="close-area"></a>
+        <div class="modal-content">
+            <a href="#" class="close-btn">&times;</a>
+            <span class="modal-img">🔈</span>
+            <h2>JBL Pulse 5</h2>
+            <p class="modal-desc">Яркое световое шоу на 360 градусов и мощный звук JBL Original Pro Sound.</p>
+            <div class="price">25 000 ₽</div>
+            <a href="mailto:order@night.ru?subject=Заказ JBL Pulse" class="btn-buy" style="display:block; margin-top:10px;">Оформить заказ по Email</a>
+        </div>
+    </div>
+
 </body>
 </html>
