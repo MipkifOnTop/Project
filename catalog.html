@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог - NightShop</title>
+    
+    <!-- Шрифты -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Island+Moments&display=swap" rel="stylesheet">
+    
+    <!-- Подключаем основные стили -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Дополнительные стили для упрощения ЭТОЙ страницы -->
+    <style>
+        /* Делаем фон светлее для легкости */
+        body { background-color: #f0f0f0; color: #333; }
+
+        /* Упрощенная шапка */
+        header { background-color: #333; border: none; }
+        
+        /* Упрощенные карточки */
+        .product-card {
+            background: #fff; /* Белый фон */
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            box-shadow: none; /* Убираем тени */
+            align-items: center; /* Все по центру */
+            text-align: center;
+        }
+        .product-card:hover {
+            transform: none; /* Убираем анимацию движения */
+            border-color: #999;
+        }
+
+        .product-img {
+            height: 100px; /* Картинки поменьше */
+            width: 100%;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: transparent; /* Убираем фон у картинки */
+        }
+
+        .product-info h3 { font-size: 1rem; margin-bottom: 5px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .product-price { font-size: 1.1rem; color: #333; margin-bottom: 10px; }
+        
+        /* Маленькая кнопка */
+        .add-btn {
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            background: #333;
+            width: auto; /* Кнопка не на всю ширину */
+            border-radius: 4px;
+        }
+
+        /* Простые фильтры */
+        .filters { gap: 5px; margin-bottom: 20px; }
+        .filter-btn {
+            color: #333;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            padding: 5px 12px;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+        
+        /* Кнопка назад */
+        .back-link {
+            display: inline-block;
+            margin: 20px 0 10px 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER (Только лого и корзина) -->
+    <header>
+        <div class="logo" onclick="window.location.href='index.html'">NightShop</div>
+        <nav>
+            <button class="cart-btn" onclick="openCart()">
+                Корзина <span class="cart-count" id="cartCount">0</span>
+            </button>
+        </nav>
+    </header>
+
+    <a href="index.html" class="back-link">← На главную</a>
+
+    <!-- КОНТЕНТ -->
+    <main class="container">
+        
+        <!-- Фильтры -->
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterProducts('all')">Все</button>
+            <button class="filter-btn" onclick="filterProducts('phones')">Телефоны</button>
+            <button class="filter-btn" onclick="filterProducts('laptops')">Ноутбуки</button>
+            <button class="filter-btn" onclick="filterProducts('audio')">Аудио</button>
+        </div>
+
+        <!-- Сетка товаров -->
+        <div class="products-grid" id="productsGrid">
+            <!-- Товары здесь -->
+        </div>
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО КОРЗИНЫ (Без изменений) -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('cartModal')">&times;</span>
+            <h2>Корзина</h2>
+            <ul class="cart-items" id="cartList"></ul>
+            <div class="cart-total">Итого: <span id="cartTotal">0</span> ₽</div>
+            <button class="checkout-btn" onclick="checkout()">Заказать</button>
+        </div>
+    </div>
+
+    <!-- Подключаем скрипт с данными -->
+    <script src="script.js"></script>
+
+    <!-- ПЕРЕОПРЕДЕЛЯЕМ ОТРИСОВКУ (чтобы было проще) -->
+    <script>
+        // Эта функция заменяет стандартную из script.js только для этой страницы
+        function renderProducts(filter = 'all') {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = ''; 
+            
+            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+
+            filtered.forEach(product => {
+                const formattedPrice = product.price.toLocaleString();
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                // Простая верстка: Картинка, Имя, Цена, Кнопка "+"
+                card.innerHTML = `
+                    <div class="product-img">${product.image}</div>
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        <div class="product-price">${formattedPrice} ₽</div>
+                        <button class="add-btn" onclick="addToCart(${product.id})">+ Купить</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+             // Обновление кнопок фильтров
+             const buttons = document.querySelectorAll('.filter-btn');
+             buttons.forEach(b => {
+                b.classList.remove('active');
+                if((filter === 'all' && b.textContent === 'Все') || 
+                   (b.getAttribute('onclick').includes(filter) && filter !== 'all')) {
+                    b.classList.add('active');
+                }
+            });
+        }
+        
+        // Запускаем рендер сразу
+        renderProducts();
+    </script>
+</body>
+</html>

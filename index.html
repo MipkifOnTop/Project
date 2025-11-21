@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NightShop - Электроника</title>
+    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Island+Moments&display=swap" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">NightShop</div>
+        <nav>
+            <button onclick="scrollToCatalog()">Каталог</button>
+            <button>Трейд-ин</button>
+            <button>Гарантия</button>
+            <button class="cart-btn" onclick="openCart()">
+                Корзина <span class="cart-count" id="cartCount">0</span>
+            </button>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div>
+            <h1>NIGHTSHOP ELECTRONICS</h1>
+            <p>Технологии будущего уже здесь.</p>
+        </div>
+    </section>
+
+
+    <main class="container" id="catalog">
+        <h2 class="section-title">Каталог товаров</h2>
+        
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterProducts('all')">Все</button>
+            <button class="filter-btn" onclick="filterProducts('phones')">Смартфоны</button>
+            <button class="filter-btn" onclick="filterProducts('laptops')">Ноутбуки</button>
+            <button class="filter-btn" onclick="filterProducts('audio')">Аудио</button>
+            <button class="filter-btn" onclick="filterProducts('accessories')">Гаджеты</button>
+        </div>
+
+
+        <div class="products-grid" id="productsGrid">
+
+        </div>
+    </main>
+
+
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('cartModal')">&times;</span>
+            <h2>Ваша корзина</h2>
+            <ul class="cart-items" id="cartList">
+                <li>Корзина пуста</li>
+            </ul>
+            <div class="cart-total">Итого: <span id="cartTotal">0</span> ₽</div>
+            <button class="checkout-btn" onclick="checkout()">Оформить заказ</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('productModal')">&times;</span>
+            <div style="text-align: center; font-size: 5rem; margin-bottom: 10px;" id="modalImg"></div>
+            <h2 id="modalTitle">Название</h2>
+            <p id="modalDesc" style="margin: 15px 0; color: #555; line-height: 1.5;">Описание...</p>
+            <p style="font-weight: bold; font-size: 1.5em; color: #333;">Цена: <span id="modalPrice">0</span> ₽</p>
+            <button class="add-btn" id="modalAddBtn" style="margin-top: 15px;">Добавить в корзину</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- БАЗА ДАННЫХ И ЛОГИКА (JS) --- */
+
+        const products = [
+            { id: 1, name: "iPhone 15 Pro", category: "phones", price: 125000, image: "📱", desc: "Титановый корпус, чип A17 Pro и лучшая система камер. Идеален для фото и игр." },
+            { id: 2, name: "Samsung Galaxy S24", category: "phones", price: 110000, image: "📲", desc: "Искусственный интеллект Galaxy AI, невероятный экран AMOLED 120Гц." },
+            { id: 3, name: "MacBook Air 15\"", category: "laptops", price: 160000, image: "💻", desc: "Тонкий, легкий, на чипе M3. Работает до 18 часов без подзарядки." },
+            { id: 4, name: "Игровой Ноутбук ROG", category: "laptops", price: 195000, image: "🖥️", desc: "Мощная видеокарта RTX 4070, 32GB RAM. Для самых требовательных игр." },
+            { id: 5, name: "AirPods Max", category: "audio", price: 65000, image: "🎧", desc: "Полноразмерные наушники с активным шумоподавлением и пространственным аудио." },
+            { id: 6, name: "JBL Pulse 5", category: "audio", price: 25000, image: "🔈", desc: "Портативная колонка с потрясающей LED-подсветкой и глубокими басами." },
+            { id: 7, name: "Apple Watch Ultra 2", category: "accessories", price: 90000, image: "⌚", desc: "Самые прочные часы Apple. Для дайвинга, альпинизма и экстрима." },
+            { id: 8, name: "PlayStation 5 Slim", category: "accessories", price: 55000, image: "🎮", desc: "Игровая консоль нового поколения. 4K гейминг, SSD и тактильная отдача." },
+            { id: 9, name: "PlayStation 5", category: "accessories", price: 40000, image: "🎮", desc: "Игровая консоль нового поколения. 4K гейминг, SSD и тактильная отдача." },
+            { id: 10, name: "Mi 15T Pro", category: "phones", price: 50000, image: "📱", desc: "Флагманский телефон с 144 Гц экраном, Dimensity 9400+ под капотом и большая батарея." }
+        ];
+
+        let cart = [];
+        const productsGrid = document.getElementById('productsGrid');
+
+        function renderProducts(filter = 'all') {
+            productsGrid.innerHTML = ''; 
+            
+            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+
+            filtered.forEach(product => {
+                const formattedPrice = product.price.toLocaleString();
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <div class="product-img" onclick="showProductDetails(${product.id})">${product.image}</div>
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        <div class="product-desc-short">${product.desc.substring(0, 50)}...</div>
+                        <div class="product-price">${formattedPrice} ₽</div>
+                        <button class="add-btn" onclick="addToCart(${product.id})">В корзину</button>
+                    </div>
+                `;
+                productsGrid.appendChild(card);
+            });
+        }
+
+        function filterProducts(category) {
+            renderProducts(category);
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(b => {
+                b.classList.remove('active');
+                if(b.textContent.toLowerCase().includes(getCategoryNameRU(category).toLowerCase()) || (category === 'all' && b.textContent === 'Все')) {
+                     b.classList.add('active');
+                }
+            });
+            if(event) event.target.classList.add('active');
+        }
+        
+        function getCategoryNameRU(cat) {
+            const map = { 'phones': 'Смартфоны', 'laptops': 'Ноутбуки', 'audio': 'Аудио', 'accessories': 'Гаджеты' };
+            return map[cat] || '';
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            const existingItem = cart.find(item => item.id === id);
+            if (existingItem) { existingItem.qty++; } else { cart.push({ ...product, qty: 1 }); }
+            updateCartUI();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartCount = document.getElementById('cartCount');
+            const cartList = document.getElementById('cartList');
+            const cartTotal = document.getElementById('cartTotal');
+
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            cartCount.textContent = totalQty;
+
+            cartList.innerHTML = '';
+            let totalPrice = 0;
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '<li style="text-align:center; color:#777;">В корзине пока пусто</li>';
+            } else {
+                cart.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'cart-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong>${item.name}</strong> <br>
+                            <span style="font-size:0.9em; color:#666;">${item.qty} шт. x ${item.price.toLocaleString()} ₽</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span>${(item.price * item.qty).toLocaleString()} ₽</span>
+                            <span class="remove-btn" onclick="removeFromCart(${item.id})">&times;</span>
+                        </div>
+                    `;
+                    cartList.appendChild(li);
+                    totalPrice += item.price * item.qty;
+                });
+            }
+            cartTotal.textContent = totalPrice.toLocaleString();
+        }
+
+        function openCart() { document.getElementById('cartModal').style.display = 'flex'; }
+
+        function showProductDetails(id) {
+            const product = products.find(p => p.id === id);
+            document.getElementById('modalImg').textContent = product.image;
+            document.getElementById('modalTitle').textContent = product.name;
+            document.getElementById('modalDesc').textContent = product.desc;
+            document.getElementById('modalPrice').textContent = product.price.toLocaleString();
+            
+            const btn = document.getElementById('modalAddBtn');
+            btn.onclick = function() { 
+                addToCart(product.id); 
+                closeModal('productModal'); 
+            };
+            document.getElementById('productModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+        
+        function checkout() {
+            if(cart.length === 0) { alert("Сначала добавьте товары в корзину!"); return; }
+            alert('Заказ успешно оформлен! Менеджер свяжется с вами.');
+            cart = []; updateCartUI(); closeModal('cartModal');
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) { event.target.style.display = "none"; }
+        }
+
+        function scrollToCatalog() { document.getElementById('catalog').scrollIntoView({behavior: "smooth"}); }
+
+        renderProducts();
+    </script>
+</body>
+</html>
